@@ -26,11 +26,11 @@ export ACE_DIR="$(pwd)"
 mkdir -p "$ACE_MAIN_DIR"
 mkdir -p "$ACE_MAIN_MIRROR_DIR"
 mkdir -p "$ACE_WING_MIRRORS_DIR"
-if [ ! -z "$(ls -a \"$ACE_MAIN_DIR\")" ]; then
+if [ ! -z "$(ls -A "$ACE_MAIN_DIR")" ]; then
     echo "'$ACE_MAIN_DIR' should be empty before proceeding."
     exit 1
 fi
-if [ ! -z "$(ls -a \"$ACE_MAIN_MIRROR_DIR\")" ]; then
+if [ ! -z "$(ls -A "$ACE_MAIN_MIRROR_DIR")" ]; then
     echo "'$ACE_MAIN_MIRROR_DIR' should be empty before proceeding."
     exit 1
 fi
@@ -50,7 +50,3 @@ git clone "$ACE_MAIN_MIRROR_DIR" "$ACE_MAIN_DIR"
 echo "Working copy instantiated in '$ACE_MAIN_DIR'! Handing off to 'init.sh'..."
 
 bash "$ACE_MAIN_DIR/scripts/init.sh"
-
-echo "System initialised! Downloading essential repositories..."
-
-python "$ACE_MAIN_DIR/scripts/pkg.py"

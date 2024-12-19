@@ -13,11 +13,15 @@
 #   - $ACE_WING_MIRRORS_DIR: the directory containing the wing mirrors
 #   - $ACE_WINGS_CONFIG_DIR: the directory containing `.conf` files for each wing
 
+set -e
+
 # We need to execute other scripts, which should be in the same dir
 SELF_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 
 # First, install packages
-python "$SELF_DIR/pkg.py" rebuild
+python "$SELF_DIR/pkg.py" rebuild rust
+source "$HOME/.cargo/env"
+python "$SELF_DIR/pky.py" rebuild
 # Then, download needed code repos (including `scripts`)
 python "$SELF_DIR/repo.py" get
 # Then, set up symlinks
