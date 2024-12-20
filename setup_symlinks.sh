@@ -34,7 +34,6 @@ while IFS= read -r line; do
         fi
     elif [ -e "$link_path" ]; then
         echo "[ERROR]: File already exists at '$link_path' (supposed to be a symlink pointing to '$path')!"
-        exit 1
     else
         # Create the symlink (being sure to create the folder tree first)
         if $use_sudo; then
