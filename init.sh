@@ -9,6 +9,7 @@
 #   - $ACE_REPOS_CONFIG: the path to the 'repos.toml' file
 #   - $ACE_REPOS_DIR: the directory where repositories are stored
 #   - $ACE_MAIN_DIR: the directory of the main repo for syncing
+#   - $ACE_LIB_DIR: a working directory for package installations
 #   - $ACE_MAIN_MIRROR_DIR: the bare Git repo that's a remote of the main rpeo
 #   - $ACE_WING_MIRRORS_DIR: the directory containing the wing mirrors
 #   - $ACE_WINGS_CONFIG_DIR: the directory containing `.conf` files for each wing
@@ -18,10 +19,14 @@ set -e
 # We need to execute other scripts, which should be in the same dir
 SELF_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 
+# A local binaries folder will be needed for package installations
+mkdir -p "$HOME/.local/bin"
+mkdir -p "$ACE_LIB_DIR"
+
 # First, install packages
 python "$SELF_DIR/pkg.py" rebuild rust
 source "$HOME/.cargo/env"
-python "$SELF_DIR/pky.py" rebuild
+python "$SELF_DIR/pkg.py" rebuild
 # Then, download needed code repos (including `scripts`)
 python "$SELF_DIR/repo.py" get
 # Then, set up symlinks

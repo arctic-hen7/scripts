@@ -14,7 +14,7 @@ while IFS= read -r line; do
     # Check for --sudo flag and extract paths
     if [[ "$line" =~ --sudo ]]; then
         use_sudo=true
-        line="${line/--sudo/}"
+        line="${line/ --sudo/}"
     else
         use_sudo=false
     fi
@@ -36,10 +36,12 @@ while IFS= read -r line; do
         echo "[ERROR]: File already exists at '$link_path' (supposed to be a symlink pointing to '$path')!"
         exit 1
     else
-        # Create the symlink
+        # Create the symlink (being sure to create the folder tree first)
         if $use_sudo; then
+            sudo mkdir -p "$(dirname "$link_path")"
             sudo ln -s "$path" "$link_path"
         else
+            mkdir -p "$(dirname "$link_path")"
             ln -s "$path" "$link_path"
         fi
     fi

@@ -105,11 +105,12 @@ def rebuild_packages(package = None):
 
     registry = get_registry()
     for pkg_info in registry:
-        if package == None or (package is not None and pkg_info["name"] != package):
-            name = pkg_info["name"]
-            recipe_path = pkg_info["recipe_path"]
-            print(f"Rebuilding package '{name}' using recipe at '{recipe_path}'...")
-            execute_recipe(name, recipe_path, "install")
+        if package is not None and pkg_info["name"] != package:
+            continue
+        name = pkg_info["name"]
+        recipe_path = pkg_info["recipe_path"]
+        print(f"Rebuilding package '{name}' using recipe at '{recipe_path}'...")
+        execute_recipe(name, recipe_path, "install")
 
 def get_recipe_path(raw_name):
     """

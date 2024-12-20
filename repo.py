@@ -12,6 +12,7 @@ import sys
 import toml
 from pathlib import Path
 import shutil
+import hashlib
 
 # Paths
 CONFIG_PATH = os.environ["ACE_REPOS_CONFIG"]
@@ -87,7 +88,10 @@ def get_repo(repo_name, repo_config):
     repo_path = CODE_DIR / repo_name
     if not repo_path.exists():
         print(f"Cloning {repo_name} into {CODE_DIR}")
-        subprocess.run(['git', 'clone', repo_config['origin'], str(repo_path)])
+        subprocess.run(['git', 'clone', repo_config['clone_url'] if 'clone_url' in repo_config else repo_config['origin'], str(repo_path)])
+        # If we used a separate URL for cloning, set the origin URL
+        if 'clone_url' in repo_config:
+            subprocess.run(['git', 'remote', 'set-url', 'origin', repo_config['origin']], cwd=repo_path)
     else:
         print(f"Repo {repo_name} already cloned. Skipping clone.")
 
@@ -113,9 +117,26 @@ def setup_hardlink(repo_path, hardlink):
     source = repo_path / repopath
     syspath = Path(os.path.expandvars(syspath))
 
+    if source.is_dir():
+        print(f"Cannot hardlink directories: {source}")
+        return
+    if syspath.is_dir():
+        print(f"Conflicting hardlink: {syspath} already exists and is a directory")
+        return
+
+    # If the place we're linking to exists, is not already the hardlink we want, and has
+    # a different checksum, abort
     if syspath.exists():
+        # This has no `else` branch because if the right hardlink exists, we don't need to
+        # do anything
         if not syspath.samefile(source):
-            print(f"Conflicting hardlink: {syspath} already exists and is not linked to {source}")
+            if get_file_checksum(syspath) != get_file_checksum(source):
+                print(f"Conflicting hardlink: {syspath} already exists and is not linked to, or the same as, {source}")
+            else:
+                # The files are the same, but aren't yet linked
+                os.remove(syspath)
+                os.link(source, syspath)
+                print(f"Recreated hardlink from {source} to {syspath}")
     else:
         os.link(source, syspath)
         print(f"Created hardlink from {source} to {syspath}")
@@ -176,6 +197,16 @@ def link(repo_name, hardlinks=None, needed=False):
 
     current_status, _ = get_status(repo_path, verbose=True)
     print(f"Linked {repo_name}: {current_status}")
+
+def get_file_checksum(file_path):
+    """
+    Computes the SHA256 checksum of the file at the given path
+    """
+    sha256 = hashlib.sha256()
+    with open(file_path, 'rb') as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            sha256.update(chunk)
+    return sha256.hexdigest()
 
 def parse_args():
     import argparse
