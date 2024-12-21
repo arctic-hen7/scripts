@@ -20,16 +20,15 @@
 # Requirements:
 #   - $ACE_SCRIPTS_CONFIG: location of the config file for scripts
 
-CONFIG_FILE=$(echo "$ACE_SCRIPTS_CONFIG")
-
 # If the first argument is `sudo`, we'll run with `sudo` to avoid in-script prompts
 use_sudo="$1"
 shift # Legit shift here because we'll never need this again
 
 # Read each line of the config file, which corresponds to a directory in which to search for
 # scripts
+exec 3< "$ACE_SCRIPTS_CONFIG"
 counter=0
-while IFS= read -r line; do
+while IFS= read -r line <&3; do
     # Skip comments and empty lines
     [[ "$line" =~ ^#.* ]] && continue
     [[ -z "$line" ]] && continue
@@ -103,6 +102,7 @@ while IFS= read -r line; do
                     else
                         "$script_file" "${args[@]}"
                     fi
+                    exec 3<&-
                     exit 0
                 fi
             fi
@@ -117,8 +117,10 @@ while IFS= read -r line; do
             break;
         fi
     done
-done < "$CONFIG_FILE"
+done
+
+exec 3<&-
 
 # If we got here, this script doesn't exist
-echo "Script not found using directories to search at '$CONFIG_FILE'."
+echo "Script not found using directories to search at '$ACE_SCRIPTS_CONFIG'."
 exit 1
