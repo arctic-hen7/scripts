@@ -28,7 +28,7 @@ python "$SELF_DIR/pkg.py" rebuild rust
 source "$HOME/.cargo/env"
 python "$SELF_DIR/pkg.py" rebuild
 # Then, download needed code repos (including `scripts`)
-python "$SELF_DIR/repo.py" get
+python "$SELF_DIR/repos.py" get
 # Then, set up symlinks
 bash "$ACE_REPOS_DIR/scripts/setup_symlinks.sh"
 # Finally, run a sync (this will prompt to pull from any wings that have changes)

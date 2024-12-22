@@ -16,6 +16,11 @@ set -e
 
 SELF_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 
+if [ ! $# -eq 1 ]; then
+    echo "Please provide an output path."
+    exit 1
+fi
+
 # Find every single `$ACE_*` environment variable that's a path and get them all relative
 # to `$ACE_DIR` (ignoring that one itself). This allows us to set the directory layout
 # inside the access script, inferring `$ACE_DIR` from where it's executed. That way, the user
@@ -55,8 +60,9 @@ script_template=$(awk -v commands="$export_commands" '
 }
 1' <<< "$script_template")
 
-if [ $# -gt 0 ]; then
-    echo "$script_template" > "$1"
-else
-    echo "$script_template"
-fi
+decrypted_path="$(mktemp)"
+echo "$script_template" > "$decrypted_path"
+
+echo "You will now be prompted to set up the encryption on this access script."
+cyst encrypt "$decrypted_path" -o "$1"
+rm "$decrypted_path"
