@@ -31,7 +31,5 @@ python "$SELF_DIR/pkg.py" rebuild
 python "$SELF_DIR/repos.py" get
 # Then, set up symlinks
 bash "$ACE_REPOS_DIR/scripts/setup_symlinks.sh"
-# Finally, run a sync (this will prompt to pull from any wings that have changes)
-bash "$ACE_REPOS_DIR/scripts/sync.sh"
 
-echo "System initialised! Opening a new 'fish' shell will provide everything."
+echo "System initialised! Opening a new 'fish' shell will provide everything. You may wish to synchronise as well."
