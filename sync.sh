@@ -13,6 +13,9 @@ set -e
 # Build a list of all the wings from known config files
 all_wings=()
 for config_file in "$ACE_WINGS_CONFIG_DIR"/*.conf; do
+    if [[ "$config_file" == *".rclone.conf" ]]; then
+        continue;
+    fi
     # This avoids checking `*.conf` if there are no wings
     [ -e "$config_file" ] || continue
 
@@ -240,8 +243,8 @@ for wing_name in "${pull_wings[@]}"; do
     fi
 
     # Now merge them in: any conflicts will be registered with respect to the point when the
-    # wing's files were originally exported
-    git checkout main
+    # wing's files were originally exported. We force this checkout in case Starling interferes!
+    git checkout -f main
     git merge "$branch_name" || {
         handle_merge_conflicts || exit 1
     }
