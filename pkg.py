@@ -136,11 +136,14 @@ def get_recipe_path(raw_name):
         print(f"Error: invalid package name '{raw_name}' (expected either `package` or `source::package`).")
         sys.exit(1)
 
-    # Now check if we already know the recipe path; if we do, make sure they're the same
+    # Now check if we already know the recipe path; if we do, make sure they're the same or that
+    # the one in the registry is the only one that exists
     registry_entry = get_registry_entry(name)
     if registry_entry is not None:
         registry_recipe_path = registry_entry["recipe_path"]
-        if registry_recipe_path != recipe_path:
+        if not (PACKAGES_DIR / recipe_path).exists() and (PACKAGES_DIR / registry_recipe_path).exists():
+            recipe_path = registry_recipe_path
+        elif registry_recipe_path != recipe_path:
             print(f"Warning: package '{name}' has a different recipe path in the registry ('{registry_recipe_path}') than the computed path ('{recipe_path}')! Aborting...")
             sys.exit(1)
 
