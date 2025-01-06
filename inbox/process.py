@@ -37,7 +37,7 @@ def process_bundle(bundle_path):
         attachments = [f for f in os.listdir(bundle_path) if f not in ('.processed', 'README.md', 'HEARME.mp4')]
         if attachments:
             print(f"Warning: Bundle with un-handled attachments: {bundle_path}")
-        elif len(os.listdir(bundle_path)) == 1:
+        elif len(attachments) == 0:
             shutil.rmtree(bundle_path)
         return False
 
@@ -49,9 +49,6 @@ def process_bundle(bundle_path):
         if transcription:
             with open(readme_path, 'w') as f:
                 f.write(transcription)
-
-    # Mark as processed
-    open(os.path.join(bundle_path, '.processed'), 'a').close()
 
     return True
 
@@ -66,7 +63,7 @@ def update_review(bundle_path):
     with open(readme_path, 'r') as f:
         contents = f.read()
 
-    contents = f"$ {contents}"
+    contents = f"# {contents}"
 
     links = []
     for root, _, files in os.walk(bundle_path):
@@ -76,7 +73,14 @@ def update_review(bundle_path):
                 links.append(f"- [{file}]({rel_path})")
 
     with open(review_file, 'a') as review:
-        review.write(f"\n\n{contents}\n" + "\n".join(links))
+        entry = f"{contents}\n" + "\n".join(links)
+        if not os.path.exists(review_file) or os.path.getsize(review_file) == 0:
+            review.write(entry.strip())
+        else:
+            review.write("\n\n" + entry.strip())
+
+    # Mark as processed
+    open(os.path.join(bundle_path, '.processed'), 'a').close()
 
 def main():
     bundles = [
