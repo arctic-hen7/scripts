@@ -26,6 +26,7 @@ done
 # Parse arguments: we push to each wing by default, and can choose to pull as well or skip entirely.
 # Throughout this process, we check the existence of each wing the user defines to make sure we have
 # only valid wings in these arrays.
+wait_in_middle=false
 only_flag=false
 first_time=false
 use_cloud=true
@@ -39,6 +40,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --only)
             only_flag=true
+            shift
+            ;;
+        -w|--wait)
+            wait_in_middle=true
             shift
             ;;
         -p|--pull-wing)
@@ -251,9 +256,22 @@ for wing_name in "${pull_wings[@]}"; do
     git branch -d "$branch_name"
 done
 
+# The user might want to do some work between pulling and pushing
+if $wait_in_middle; then
+    echo
+    echo "Make any changes you need, and then press enter to continue..."
+    read
+    # Commit local changes if there are any
+    if [ -n "$(git status --porcelain)" ]; then
+        git add -A
+        git commit -m "sync: commit local changes"
+    fi
+fi
+
 # Now push to all the wings not in `skip_wings`
 for wing_name in "${push_wings[@]}"; do
     # Copy everything the wing repo wants (according to its filter) over, deleting everything else
+    rm -rf "$ACE_WING_MIRRORS_DIR/$wing_name"/*
     rsync -a --delete --filter="merge $ACE_WINGS_CONFIG_DIR/$wing_name.conf" . "$ACE_WING_MIRRORS_DIR/$wing_name"
     # Save the current point in the repo so we can sync from the wing properly next time
     git rev-parse HEAD > "$ACE_WING_MIRRORS_DIR/$wing_name/.wing_state"
