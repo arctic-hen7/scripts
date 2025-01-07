@@ -17,8 +17,7 @@ def transcribe_mp4(mp4_path):
         # Use OpenAI Whisper to transcribe the file
         response = client.audio.transcriptions.create(
             model="whisper-1",
-            file=open(mp4_path, 'rb'),
-            response_format="text"
+            file=open(mp4_path, 'rb')
         )
         return response.text
     except Exception as e:
