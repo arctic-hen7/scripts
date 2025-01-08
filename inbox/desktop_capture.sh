@@ -6,6 +6,8 @@
 #   - Alacritty
 #   - (Everything `capture.sh` requires)
 
+set -e
+
 SELF_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 
 alacritty \
@@ -13,4 +15,4 @@ alacritty \
     -o "window.dimensions.lines = 2" \
     -o "colors.primary.background = '#ffffff'" \
     -o "colors.primary.foreground = '#000000'" \
-    -e bash -c "read -p \"Capture: \" capture && echo \"\$capture\" | bash \"$SELF_DIR/capture.sh\" text"
+    -e bash "$SELF_DIR/terminal_capture.sh"

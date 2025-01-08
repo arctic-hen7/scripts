@@ -36,7 +36,7 @@ mkdir "$ACE_INBOX_DIR/$id"
 # Any other arguments are attachments
 for arg in "${@:2}"; do
     # Check if the argument is a valid file
-    if [[ -f "$arg" ]]; then
+    if [ -e "$arg" ]; then
         # Copy the file to the target directory
         cp -r "$arg" "$ACE_INBOX_DIR/$id"
         echo "Attached '$arg'."

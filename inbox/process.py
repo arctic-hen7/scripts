@@ -85,6 +85,7 @@ def main():
     bundles = [
         os.path.join(ACE_INBOX_DIR, d) for d in os.listdir(ACE_INBOX_DIR)
         if os.path.isdir(os.path.join(ACE_INBOX_DIR, d)) and
+            # Checking for a valid UUID prevents checking the `next/` folder
            uuid.UUID(d, version=4)
     ]
 
