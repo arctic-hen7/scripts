@@ -96,6 +96,8 @@ if [ ! -s "$path" ] || [[ -z $(tr -d '[:space:]' < "$path") ]]; then
     # Write the template to the file
     echo -e "$template" > "$path"
     echo "Journal file for $date_string created."
+    echo "$path"
 else
     echo "Journal file for $date_string already exists."
+    echo "$path"
 fi
