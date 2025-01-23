@@ -36,7 +36,7 @@ if [ ! -s "$path" ] || [[ -z $(tr -d '[:space:]' < "$path") ]]; then
     mkdir -p "$(dirname "$path")"
 
     # Ask the user questions
-    result="$(birocrat "$ACE_LIFE_TRACKING_SCRIPT")"
+    result="$(birocrat "$ACE_LIFE_TRACKING_SCRIPT" -j "$ACE_LIFE_TRACKING_DATA")"
 
     # Write the template to the file
     echo -e "$result" > "$path"
