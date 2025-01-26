@@ -57,7 +57,10 @@ SUNDAY_APPEND="
 
 # Weekly Journal Entry
 
-PLACEHOLDER"
+PLACEHOLDER
+
+# Goals for Next Week
+-"
 
 # Read the date string
 date_string="$1"
