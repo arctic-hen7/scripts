@@ -152,3 +152,6 @@ while IFS= read -r line; do
             ;;
     esac
 done
+
+exec {SYS_PINENTRY[0]}<&-
+exec {SYS_PINENTRY[1]}>&-
