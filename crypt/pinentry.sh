@@ -1,6 +1,10 @@
 #!/bin/bash
 # A custom pinentry script that allows working with many GPG keys using a single master password.
-# The keys must be registered in `$ACE_KEYRING` under their email key ID, followed by `.enc`.
+# The keys must be registered in `$ACE_KEYRING` under their email key ID, followed by `.enc`. If
+# the GPG agent is being used to handle SSH keys, provided their keygrips are under
+# `$GNUPGHOME/sshcontrol`, this will also work for them. Any more complex tasks will be delegated
+# to the system pinentry. In essence, you will only notice this program when it has something it
+# knows it can do.
 #
 # This can be used for GPG keys by adding the following to `$GNUPGHOME/gpg-agent.conf`:
 #
@@ -11,6 +15,9 @@
 # Requirements:
 #   - $ACE_KEYRING_DIR
 #   - openssl
+#   - gpg
+#   - ssh-keygen (if using SSH keys)
+#   - Bash >4 (for `coproc` support)
 
 set -e
 SELF_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
@@ -55,49 +62,93 @@ match_ssh_key() {
     exit 1
 }
 
-# Always need to open with this
-echo "OK Pleased to meet you"
+# Set up a coprocess so we can work with the system pinentry
+coproc SYS_PINENTRY ( "$ACE_PINENTRY" "$@" )
+SYS_PINENTRY_STDIN="${SYS_PINENTRY[1]}"
+SYS_PINENTRY_STDOUT="${SYS_PINENTRY[0]}"
+send_and_receive() {
+    if [ ! -z "$1" ]; then
+        # Send the single command line
+        echo "$1" >&"$SYS_PINENTRY_STDIN"
+    fi
 
+    # Wait for as many lines as the server needs to send (ending with `OK` or `ERR`)
+    local response_line
+    while IFS= read -r response_line <&"$SYS_PINENTRY_STDOUT"; do
+        echo "$response_line"
+
+        # The Assuan protocol will stop sending lines through with `OK` or `ERR`
+        if [[ "$response_line" == OK* || "$response_line" == ERR* ]]; then
+            break
+        fi
+    done
+}
+
+# It will start with an `OK` message, so read first
+send_and_receive
+# The Assuan protocol does not yet support multiline client requests, so we will expect a single
+# line from our own stdin for communication
+intercept_getpin=false
+intercept_complete=false
 key_id=""
 while IFS= read -r line; do
+    # Before sending the command through, intercept to check for key cascading
     case "$line" in
+        # The description of the prompt may contain key IDs if the user is being prompted for a
+        # particular key's password (which we might be able to handle)
         SETDESC*)
+            set +e
+            # SSH keys are special: we get the SSH identifier for them and have to match it
             if echo "$line" | grep -q "ssh key"; then
-                # SSH keys are specially prompted for
                 ssh_key_id="$(echo "$line" | grep -o 'SHA256:[^%]*')"
-                set +e
                 key_id="$(match_ssh_key "$ssh_key_id")"
-                set -e
             else
-                # Extract key ID from SETDESC (the email-form ID is in angular brackets)
+                # Otherwise we'll get the email from inside angular brackets
                 key_id=$(echo "$line" | grep -oP '(?<=<).*?(?=>)')
             fi
-            echo "OK"
-            ;;
-        GETPIN)
-            # Decrypt the file containing the key's passphrase in `$ACE_KEYRING`, using the master
-            # password
-            set +e
-            result="$(bash "$SELF_DIR/decrypt_key.sh" "$key_id")"
-            resultcode=$?
             set -e
-            if [ $resultcode -eq 0 ]; then
-                echo "D $result"
-                echo "OK"
-            else
-                # Turns `Error: some message` -> `Some message`
-                err=$(echo "$result" | sed -E 's/Error: (.*)/\1/' | awk '{print toupper(substr($1,1,1)) tolower(substr($1,2)) " " substr($0, index($0,$2))}')
-                echo "ERR $err"
+
+            # If a corresponding file exists, we can use the master password to decrypt the key
+            if [ -f "$ACE_KEYRING_DIR/$key_id.enc" ]; then
+                intercept_getpin=true
             fi
-            exit 0
+
+            if ! $intercept_complete; then
+                send_and_receive "$line"
+            else
+                echo "OK"
+            fi
             ;;
-        BYE)
-            # Cleanly exit when BYE is received
-            exit 0
+        GETPIN*)
+            if $intercept_getpin; then
+                # We have up to now maintained a connection with the system pinentry, which we
+                # no longer need
+                set +e
+                result="$(bash "$SELF_DIR/decrypt_key.sh" "$key_id")"
+                resultcode=$?
+                set -e
+                if [ $resultcode -eq 0 ]; then
+                    echo "D $result"
+                    echo "OK"
+                else
+                    # Turns `Error: some message` -> `Some message`
+                    err=$(echo "$result" | sed -E 's/Error: (.*)/\1/' | awk '{print toupper(substr($1,1,1)) tolower(substr($1,2)) " " substr($0, index($0,$2))}')
+                    echo "ERR $err"
+                fi
+
+                # Don't send any future commands to the system pinentry, handle them with our shim
+                intercept_complete=true
+            else
+                send_and_receive "$line"
+            fi
             ;;
         *)
-            # For all other commands, respond with OK or ignore
-            echo "OK"
+            if ! $intercept_complete; then
+                send_and_receive "$line"
+            else
+                # Good general response
+                echo "OK"
+            fi
             ;;
     esac
 done
