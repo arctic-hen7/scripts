@@ -7,8 +7,12 @@
 #   - rclone
 #   - rsync
 #   - git
+#   - pass (with `securedb/rclone`, otherwise change!)
 
 set -e
+
+# Get the `rclone` password (unique to my setup)
+export RCLONE_CONFIG_PASS="$(pass show securedb/rclone)"
 
 # Build a list of all the wings from known config files
 all_wings=()
