@@ -129,8 +129,8 @@ def get_recipe_path(raw_name):
         source = None
         recipe_path = f"recipes/{raw_name}.sh"
     elif len(parts) == 2:
-        name = parts[0]
-        source = parts[1]
+        source = parts[0]
+        name = parts[1]
         recipe_path = f"sources/{source}.sh"
     else:
         print(f"Error: invalid package name '{raw_name}' (expected either `package` or `source::package`).")
