@@ -60,6 +60,7 @@ SUNDAY_APPEND="
 PLACEHOLDER
 
 # Goals for Next Week
+
 -"
 
 # Read the date string
