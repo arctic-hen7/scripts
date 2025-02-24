@@ -32,4 +32,4 @@ python "$SELF_DIR/repos.py" get
 # Then, set up symlinks
 bash "$ACE_REPOS_DIR/scripts/setup_symlinks.sh"
 
-echo "System initialised! Opening a new 'fish' shell will provide everything. You may wish to synchronise as well."
+echo "System initialised! Opening a new 'fish' shell will provide everything. You may wish to synchronise as well. If you'll be writing code, use the Git setup script too once GPG is ready."
