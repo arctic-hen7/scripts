@@ -119,7 +119,7 @@ handle_merge_conflicts() {
             case $answer in
                 [Yy]* )
                     git add -A
-                    git commit -m "sync: resolved conflicts"
+                    git commit -m "sync: resolved conflicts" --no-gpg-sign
                     return 0
                     ;;
                 [Nn]* )
@@ -224,7 +224,7 @@ done
 # Commit local changes if there are any
 if [ -n "$(git status --porcelain)" ]; then
     git add -A
-    git commit -m "sync: commit local changes"
+    git commit -m "sync: commit local changes" --no-gpg-sign
 fi
 
 # If others might have made changes, pull from the remote and resolve conflicts
@@ -248,13 +248,13 @@ for wing_name in "${pull_wings[@]}"; do
     # Commit all the changes from the wing, if there are any
     if [ -n "$(git status --porcelain)" ]; then
         git add -A
-        git commit -m "sync: commit local changes"
+        git commit -m "sync: commit local changes" --no-gpg-sign
     fi
 
     # Now merge them in: any conflicts will be registered with respect to the point when the
     # wing's files were originally exported. We force this checkout in case Starling interferes!
     git checkout -f main
-    git merge "$branch_name" || {
+    git merge "$branch_name" --no-gpg-sign || {
         handle_merge_conflicts || exit 1
     }
     git branch -d "$branch_name"
@@ -268,7 +268,7 @@ if $wait_in_middle; then
     # Commit local changes if there are any
     if [ -n "$(git status --porcelain)" ]; then
         git add -A
-        git commit -m "sync: commit local changes"
+        git commit -m "sync: commit local changes" --no-gpg-sign
     fi
 fi
 
