@@ -13,6 +13,7 @@
 import chromadb
 from chromadb.config import Settings
 import os
+import sys
 import requests
 import hashlib
 import json
@@ -83,7 +84,7 @@ def index_nodes(nodes):
     Actually adds the given nodes to the index.
     """
 
-    print(f"Need to update {nodes.__len__()} nodes.")
+    print(f"Need to update {nodes.__len__()} nodes.", file=sys.stderr)
     if nodes.__len__() == 0:
         return
 
@@ -111,6 +112,7 @@ def update_index(path_scope):
     # Write the new cache
     with open(CACHE_PATH, "w") as f:
         json.dump(cached_nodes, f)
+    print(f"Index updated!", file=sys.stderr)
 
 def search_index(query, n_results, contains=None, not_contains=None):
     """
@@ -138,54 +140,43 @@ def search_index(query, n_results, contains=None, not_contains=None):
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description="Build an index of the Zettelkasten using Chroma.")
-    subparsers = parser.add_subparsers(dest="command")
-    build_parser = subparsers.add_parser("build", help="Build the index")
-    build_parser.add_argument("path_scope", nargs="?", help="Path scope to search within")
-    search_parser = subparsers.add_parser("search", help="Search the index")
-    search_parser.add_argument("query", help="Query to search for")
-    search_parser.add_argument("-n", "--num-results", type=int, default=10, help="Number of results to return")
-    search_parser.add_argument("--contains", help="Text that must be contained in the result")
-    search_parser.add_argument("--not-contains", help="Text that must not be contained in the result")
+    parser = argparse.ArgumentParser(description="Search an index of the Zettelkasten using Chroma.")
+    parser.add_argument("query", help="Query to search for")
+    parser.add_argument("-n", "--num-results", type=int, default=10, help="Number of results to return")
+    parser.add_argument("--contains", help="Text that must be contained in the result")
+    parser.add_argument("--not-contains", help="Text that must not be contained in the result")
     args = parser.parse_args()
 
-    if args.command == "build":
-        print("Updating index...")
-        update_index(args.path_scope)
-        print("Index updated!")
-    elif args.command == "search":
-        results = search_index(args.query, args.num_results, args.contains, args.not_contains)
-        documents = results["documents"][0]
-        paths = [metadata["path"] for metadata in results["metadatas"][0]]
+    update_index("zk")
+    results = search_index(args.query, args.num_results, args.contains, args.not_contains)
+    documents = results["documents"][0]
+    paths = [metadata["path"] for metadata in results["metadatas"][0]]
 
-        # The title of each document is on the first line, and we'll remove leading hashes
-        titles = [doc.split("\n")[0].replace("#", "").strip() for doc in documents]
+    # The title of each document is on the first line, and we'll remove leading hashes
+    titles = [doc.split("\n")[0].replace("#", "").strip() for doc in documents]
 
-        # Let the user choose between the results and open their selected result's path
-        question = [
-            inquirer.List(
-                "choice",
-                message="Select a result to open",
-                choices=titles
-            )
-        ]
+    # Let the user choose between the results and open their selected result's path
+    question = [
+        inquirer.List(
+            "choice",
+            message="Select a result to open",
+            choices=titles
+        )
+    ]
 
-        # Display the menu and get the user's choice
-        answer = inquirer.prompt(question)
+    # Display the menu and get the user's choice
+    answer = inquirer.prompt(question)
 
-        if answer and "choice" in answer:
-            # Find the path corresponding to the selected title
-            selected_title = answer["choice"]
-            selected_idx = titles.index(selected_title)
-            selected_path = paths[selected_idx]
+    if answer and "choice" in answer:
+        # Find the path corresponding to the selected title
+        selected_title = answer["choice"]
+        selected_idx = titles.index(selected_title)
+        selected_path = paths[selected_idx]
 
-            # Use the path for whatever processing you require
-            subprocess.run(["nvim", os.path.join(ACE_MAIN_DIR, selected_path)])
-        else:
-            print("No valid option selected.")
-
+        # Use the path for whatever processing you require
+        subprocess.run(["nvim", os.path.join(ACE_MAIN_DIR, selected_path)])
     else:
-        print("Invalid command.")
+        print("No valid option selected.")
 
 if __name__ == "__main__":
     main()
