@@ -14,8 +14,10 @@
 
 set -e
 
-# Read the date string
-date_string="$1"
+date_string="$(date +%Y-%m-%d)"
+if [ -n "$1" ]; then
+    date_string="$1"
+fi
 
 # Check the format of the date string
 path=""
