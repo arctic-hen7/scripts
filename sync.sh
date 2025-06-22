@@ -174,6 +174,9 @@ if $use_cloud && ! $first_time; then
 
     # Separately sync the refs because `rclone` thinks they haven't changed
     rclone sync main-crypt:main/refs/heads "$ACE_MAIN_MIRROR_DIR/refs/heads" -I
+    # Make sure the refs are there in case we packed last time (rclone won't sync empty
+    # directories, and this stuffs up repo recognition)
+    mkdir -p "$ACE_MAIN_MIRROR_DIR/refs/heads"
 fi
 
 cd "$ACE_MAIN_DIR"
