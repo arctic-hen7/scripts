@@ -41,6 +41,9 @@ elif [[ "$1" == "pull" ]]; then
     rclone --config "$rclone_config_path" sync "$WING_NAME-crypt":wing "$WING_DIR"
 
     rm "$rclone_config_path"
+    # NOTE: Typically, this will be wrapped in a caller script, synced with the rest of the
+    # files, that can now handle any extra syncing jobs (e.g. symlinking things). On the first
+    # run, the user will have to run that manually after this.
 else
     echo "Invalid command '$1', expected 'push' or 'pull'."
 fi

@@ -4,6 +4,10 @@
 #   - $RCLONE_WING_CONFIG_PASS: the password for the wing `rclone` configuration (if it's encrypted)
 #   - $ACE_WINGS_CONFIG_DIR: the directory containing `.conf` files for each wing
 
+# NOTE: We don't symlink in the wing `rclone` config to allow for easy changes because we have to
+# embed it at some stage for the initial sync. In my opinion, having it there all the time and
+# replacing the script when you change remotes is a solid enough pattern (for now).
+
 set -e
 
 SELF_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
