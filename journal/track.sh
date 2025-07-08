@@ -10,6 +10,7 @@
 # Requirements:
 #   - $ACE_JOURNALS_DIR: the directory containing daily journal files
 #   - $ACE_LIFE_TRACKING_SCRIPT: the location of the Birocrat Lua script used for life tracking
+#   - $ACE_LIFE_TRACKING_DATA: the location of the JSON file defining life tracking questions
 #   - birocrat
 
 set -e
