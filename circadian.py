@@ -272,10 +272,25 @@ def main():
                 day["ideal_wakeup"] = old_day["ideal_wakeup"]
                 day["ideal_wakeup_notes"] = old_day.get("ideal_wakeup_notes", "")
             
-            # Preserve ideal sleep if it's still valid
-            if day.get("latest_sleep") and old_day.get("ideal_sleep") and old_day["ideal_sleep"] <= day["latest_sleep"]:
-                 day["ideal_sleep"] = old_day["ideal_sleep"]
-                 day["ideal_sleep_notes"] = old_day.get("ideal_sleep_notes", "")
+            # Preserve ideal sleep, now with midnight-aware comparison
+            ideal_sleep_time = old_day.get("ideal_sleep")
+            latest_sleep_time = day.get("latest_sleep")
+
+            if ideal_sleep_time and latest_sleep_time:
+                # Treat any time after noon as "evening" and before as "morning"
+                # to correctly handle schedules that cross midnight.
+                split_time = datetime.time(12, 0)
+                
+                # An evening ideal time is always valid if the latest is in the morning.
+                is_valid_across_midnight = (ideal_sleep_time >= split_time and 
+                                            latest_sleep_time < split_time)
+                
+                # Otherwise, a direct comparison is fine.
+                is_valid_same_day = (ideal_sleep_time <= latest_sleep_time)
+
+                if is_valid_across_midnight or is_valid_same_day:
+                    day["ideal_sleep"] = ideal_sleep_time
+                    day["ideal_sleep_notes"] = old_day.get("ideal_sleep_notes", "")
 
             # Prefer notes from the existing computed schedule over the source.
             if old_day.get("ready_by_notes"):
