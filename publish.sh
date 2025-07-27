@@ -20,12 +20,79 @@
 #   - `rsync`
 #   - `rclone`
 
-set -e
+set -euo pipefail
 
 INPUT_DIR="$(pwd)"
 TARGETS_DIR="$INPUT_DIR/.publish.conf.d/targets"
 REMOTES_DIR="$INPUT_DIR/.publish.conf.d/remotes"
 PREP_SCRIPT="$INPUT_DIR/.publish.conf.d/prep.sh"
+
+DEFAULT_PREP_SCRIPT='#!/bin/bash
+# This script pre-processes content from the filesystem into content that gets shared.
+
+INPUT_DIR="$1"
+OUTPUT_DIR="$2"
+
+# Sync everything from the input to the output, except the publishing config itself.
+# You can remove this and copy individual files over if you prefer to be more fine-grained.
+rsync -a --exclude='.publish.conf.d/' "$INPUT_DIR/" "$OUTPUT_DIR/"
+cd "$OUTPUT_DIR"
+
+# All the original files are now in the working directory, do what you need!'
+
+DEFAULT_TARGET_CONF='# Add removal rules here, or replace this whole file with just addition rules if you want to be include-first
+
+#- my_secret_file.txt
+
+# This adds everything, and should go last
++ **'
+
+# Short-circuit to set up new publish directories
+if [[ "$1" == "setup" ]]; then
+    if [ -d "$INPUT_DIR/.publish.conf.d" ]; then
+        echo "Error: this directory has already been set up for publishing."
+        exit 1
+    fi
+
+    mkdir -p "$TARGETS_DIR"
+    mkdir -p "$REMOTES_DIR"
+    echo -e "$DEFAULT_PREP_SCRIPT" > "$PREP_SCRIPT"
+
+    # Create as many targets as the user wants
+    while true; do
+        # Get the name and path to this target
+        read -rp "Target name: " target_name
+        if [[ -z "$target_name" ]]; then
+            echo "Error: target name cannot be empty, try again" >&2
+            continue
+        fi
+        if [[ "$target_name" =~ [^a-zA-Z0-9._-] ]]; then
+            echo "Error: invalid characters in target name, try again" >&2
+            continue
+        fi
+
+        read -rp "Enter rclone path for '$target_name' (e.g. remote:bucket): " target_rclone_path
+        if [[ -z "$target_rclone_path" ]]; then
+            echo "Error: rclone path cannot be empty, try again" >&2
+            continue
+        fi
+
+        echo "$target_rclone_path" > "$REMOTES_DIR/$target_name"
+
+        # Write a default include config, but let the user change it
+        echo "$DEFAULT_TARGET_CONF" > "$TARGETS_DIR/$target_name.conf"
+        "$EDITOR" "$TARGETS_DIR/$target_name.conf"
+
+        # Repeat?
+        read -rp "Add another target? [y/N] " yn
+        case "$yn" in
+            [Yy]* ) echo ;;
+            * ) echo "Done."; break ;;
+        esac
+    done
+    exit
+fi
+
 
 if [ ! -d "$INPUT_DIR/.publish.conf.d" ]; then
     echo "Error: '.publish.conf.d/' not found, please configure this directory for syncing."
