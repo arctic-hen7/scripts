@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import os
 import uuid
@@ -85,7 +85,7 @@ def main():
     bundles = [
         os.path.join(ACE_INBOX_DIR, d) for d in os.listdir(ACE_INBOX_DIR)
         if os.path.isdir(os.path.join(ACE_INBOX_DIR, d)) and
-            d != 'next'
+            d != 'next' and d != 'content'
     ]
 
     processed_bundles = []
