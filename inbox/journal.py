@@ -81,68 +81,79 @@ def infer_from_items(text):
         return response.output_text
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: journal.py <journal-date>")
-        sys.exit(1)
-    journal_date = sys.argv[1]
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Process journal entries for a given date.")
+    parser.add_argument("journal_date", type=str, help="The date of the journal entry to process (YYYY-MM-DD).")
+    parser.add_argument("--items-only", action="store_true",
+                        help="Only process the additional items, not the main journal entry.")
+    parser.add_argument("--journal-only", action="store_true", 
+                        help="Only process the main journal entry, not the additional items.")
+    args = parser.parse_args()
+
+    journal_date = args.journal_date
+    do_journal = args.journal_only or not args.items_only
+    do_items = args.items_only or not args.journal_only
 
     trashes = []
     # We will have either a recording, or a typed entry, in the inbox, for both the journal proper
     # and the additional items (gratitude journal and goals)
     journal_text = None
-    typed_journal_path = ACE_INBOX_DIR / f"journal_{journal_date}.md"
-    if typed_journal_path.exists():
-        # If we have a typed journal entry, we can just read it directly
-        with open(typed_journal_path, 'r', encoding='utf-8') as file:
-            journal_text = file.read()
-            trashes.append(typed_journal_path)
-    else:
-        recording_path = None
-        for ext in ALLOWED_AUDIO_EXTENSIONS:
-            try_recording_path = ACE_INBOX_DIR / f"journal_{journal_date}{ext}"
-            if try_recording_path.exists():
-                recording_path = try_recording_path
-                break
-        if recording_path:
-            # We found the recording, transcribe it *locally* (sensitive)
-            print(f"Transcribing recording locally for {journal_date}...")
-            text = transcribe_local(recording_path)
-            if not text:
-                print(f"Error: transcription failed for {journal_date}.")
-            else:
-                journal_text = text
-                trashes.append(recording_path)
+    if do_journal:
+        typed_journal_path = ACE_INBOX_DIR / f"journal_{journal_date}.md"
+        if typed_journal_path.exists():
+            # If we have a typed journal entry, we can just read it directly
+            with open(typed_journal_path, 'r', encoding='utf-8') as file:
+                journal_text = file.read()
+                trashes.append(typed_journal_path)
         else:
-            # No recording path, and no typed path
-            print(f"Error: no journal found in the inbox for {journal_date}.")
+            recording_path = None
+            for ext in ALLOWED_AUDIO_EXTENSIONS:
+                try_recording_path = ACE_INBOX_DIR / f"journal_{journal_date}{ext}"
+                if try_recording_path.exists():
+                    recording_path = try_recording_path
+                    break
+            if recording_path:
+                # We found the recording, transcribe it *locally* (sensitive)
+                print(f"Transcribing recording locally for {journal_date}...")
+                text = transcribe_local(recording_path)
+                if not text:
+                    print(f"Error: transcription failed for {journal_date}.")
+                else:
+                    journal_text = text
+                    trashes.append(recording_path)
+            else:
+                # No recording path, and no typed path
+                print(f"Error: no journal found in the inbox for {journal_date}.")
 
     # Now do the additional items
     additional_items_text = None
-    typed_items_path = ACE_INBOX_DIR / f"items_{journal_date}.md"
-    if typed_items_path.exists():
-        # If we have a typed items entry, we can just read it directly
-        with open(typed_items_path, 'r', encoding='utf-8') as file:
-            additional_items_text = file.read()
-            trashes.append(typed_items_path)
-    else:
-        recording_path = None
-        for ext in ALLOWED_AUDIO_EXTENSIONS:
-            try_recording_path = ACE_INBOX_DIR / f"items_{journal_date}{ext}"
-            if try_recording_path.exists():
-                recording_path = try_recording_path
-                break
-        if recording_path:
-            # We found the recording, transcribe it *remotely* (less sensitive)
-            print(f"Transcribing additional items recording remotely for {journal_date}...")
-            text = transcribe_cloud(recording_path)
-            if not text:
-                print(f"Error: transcription failed for additional items on {journal_date}.")
-            else:
-                additional_items_text = text
-                trashes.append(recording_path)
+    if do_items:
+        typed_items_path = ACE_INBOX_DIR / f"items_{journal_date}.md"
+        if typed_items_path.exists():
+            # If we have a typed items entry, we can just read it directly
+            with open(typed_items_path, 'r', encoding='utf-8') as file:
+                additional_items_text = file.read()
+                trashes.append(typed_items_path)
         else:
-            # No recording path, and no typed path
-            print(f"Error: no additional items found in the inbox for {journal_date}.")
+            recording_path = None
+            for ext in ALLOWED_AUDIO_EXTENSIONS:
+                try_recording_path = ACE_INBOX_DIR / f"items_{journal_date}{ext}"
+                if try_recording_path.exists():
+                    recording_path = try_recording_path
+                    break
+            if recording_path:
+                # We found the recording, transcribe it *remotely* (less sensitive)
+                print(f"Transcribing additional items recording remotely for {journal_date}...")
+                text = transcribe_cloud(recording_path)
+                if not text:
+                    print(f"Error: transcription failed for additional items on {journal_date}.")
+                else:
+                    additional_items_text = text
+                    trashes.append(recording_path)
+            else:
+                # No recording path, and no typed path
+                print(f"Error: no additional items found in the inbox for {journal_date}.")
 
     # Now infer the structure of the additional items (if we have them)
     additional_items_text = infer_from_items(additional_items_text.strip()) if additional_items_text else None
