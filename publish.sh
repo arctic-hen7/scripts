@@ -161,7 +161,7 @@ if [[ "$sync_target" != "" ]]; then
     SYNC_DIR="$(mktemp -d)"
     rsync -a --delete --filter="merge $TARGETS_DIR/$sync_target.conf" "$OUTPUT_DIR/" "$SYNC_DIR/"
     # And finally sync *that* with `rclone`
-    echo "Syncing to '$target_name'..."
+    echo "Syncing to '$sync_target'..."
     rclone sync "$SYNC_DIR" "$remote"
 
     # And now clean up
