@@ -34,8 +34,17 @@ if [ $keyctl_search_code -eq 0 ]; then
     set -e
 
     if [ $keyctl_print_code -eq 0 ]; then
-        echo "$master_pw"
-        exit 0
+        # Prompt the user before we do anything more to make sure we don't get
+        # phantom ops straight after legitimately authorised ones
+        pinentry_res="$(echo -e "SETPROMPT Confirm Key Access\nSETDESC Do you want to allow key access for this operation?\nSETOK Allow\nSETCANCEL Block\nCONFIRM\n" | "$ACE_PINENTRY" | tail -n 2)"
+        # We either get `OK\nOK` or `OK\nERR some error`
+        if [[ $pinentry_res == *OK ]]; then
+            echo "$master_pw"
+            exit 0
+        else
+            echo "Error: user denied key access."
+            exit 1
+        fi
     fi
 fi
 
