@@ -8,6 +8,8 @@
 #
 # To manually clear the cache: keyctl purge user ace-master-pw
 
+set -euo pipefail
+
 # Cache timeout in minutes
 CACHE_TIMEOUT_MINUTES=15
 
@@ -64,24 +66,28 @@ while [ $num_tries -lt $MAX_TRIES ]; do
         pass="${pass_line#D }"
 
         # Use that pass*phrase* to decrypt the master pass*word*
+        set +e
         master_pw="$(openssl enc -d -in "$master_pw_file" -aes-256-cbc -salt -pbkdf2 -pass fd:3 3<<<"$pass")"
+        res=$?
+        set -e
 
-        if [ $? -eq 0 ]; then
+        if [ $res -eq 0 ]; then
             # Successfully decrypted, store in kernel keyring with timeout
             set +e
             key_id=$(echo -n "$master_pw" | keyctl padd user "$CACHE_KEY_NAME" @s 2>/dev/null)
-            if [ $? -eq 0 ]; then
+            res=$?
+            set -e
+            if [ $res -eq 0 ]; then
                 # Set timeout in seconds
                 timeout_seconds=$((CACHE_TIMEOUT_MINUTES * 60))
                 keyctl timeout "$key_id" "$timeout_seconds" 2>/dev/null
             fi
-            set -e
 
             echo "$master_pw"
             exit 0
         else
             # A wrong passphrase can be re-prompted
-            ((num_tries++))
+            num_tries=$((num_tries + 1))
             continue
         fi
     else
