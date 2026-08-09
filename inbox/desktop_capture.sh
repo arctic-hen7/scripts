@@ -4,15 +4,17 @@
 #
 # Requirements:
 #   - Alacritty
-#   - (Everything `capture.sh` requires)
+#   - (Everything `terminal_capture.py` requires)
 
 set -e
 
 SELF_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+
+source "$ACE_MAIN_DIR/dotfiles/api_keys.sh"
 
 alacritty \
     -o "window.dimensions.columns = 100" \
     -o "window.dimensions.lines = 2" \
     -o "colors.primary.background = '#ffffff'" \
     -o "colors.primary.foreground = '#000000'" \
-    -e bash "$SELF_DIR/terminal_capture.sh"
+    -e python "$SELF_DIR/terminal_capture.py"
